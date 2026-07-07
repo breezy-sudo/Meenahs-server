@@ -9,6 +9,9 @@ require('dotenv').config();
 
 const app = express();
 
+// Trust proxy for railway deployment
+app.set('trust proxy', 1);
+
 // security middleware
 app.use(helmet()); //secure HTTP headers
 app.use(hpp()); // prevent HTTPparameters pollution
