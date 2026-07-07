@@ -30,6 +30,7 @@ app.use(mongoSanitize()); // sanitize data to prevent NoSQL injection and also r
 app.use(cors({
     origin: ['https://vercel.app'],
     methods: ['GET', 'PUT', 'POST', 'DELETE'],
+    allowedHeaders: ['Content-type', 'Authorization'],
     credentials: true
 }));
 
