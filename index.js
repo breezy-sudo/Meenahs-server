@@ -53,7 +53,7 @@ app.use(cors({
 // connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Meenahshennaart')
     .then(() => console.log('✅MongoDB connected successfully!'))
-    .catch(() => console.log('❌MongoDB connection error:', err));
+    .catch((err) => console.log('❌MongoDB connection error:', err));
 
 // routes
 const bookingRoutes = require('./routes/instrn.js');
@@ -61,12 +61,10 @@ app.use('/bookings', bookingRoutes);
 app.get('/', (req, res) => {
     res.send('🌸 Meenahs Henna Art Server is running!');
 });
-app.listen(7000, () => {
-    console.log('🚀Server is running on http://localhost:7000');
-})
+
 
 // start server
-const PORT = process.env.PORT || 7000;
+
 app.listen(PORT, () => {
     console.log(`🚀Server is running on http://localhost:${PORT}`);
 })

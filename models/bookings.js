@@ -50,11 +50,11 @@ const bookingSchema = new mongoose.Schema({
     //booking status -- starts as pending
     status: {
         type: String,
-        required: 'pending'
+        default: 'pending'
     },
     createdAt: {
         type: Date,
-        required: Date.now
+        default: Date.now
     }
 
 });
