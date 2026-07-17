@@ -23,11 +23,11 @@ const bookingSchema = new mongoose.Schema({
         required: true
     },
     hennaType: {
-        type: String,
+        type: [String],
         required: true
     },
     bodyArea: {
-        type: String,
+        type: [String],
         required: true
     },
     location: {
