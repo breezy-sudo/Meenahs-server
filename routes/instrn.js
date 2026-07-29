@@ -7,6 +7,8 @@ const router = express.Router();
 // importing booking model
 const Booking = require('../models/bookings.js');
 
+// importing admin auth middleware — protects routes that expose customer data
+const verifyAdminToken = require('../middleware/auth.js');
 // ROUTE 1 -- SAVES NEW BOOKING
 // POST/bookings
 // used by index.html when customer submits bookings form
@@ -46,7 +48,8 @@ router.post('/', async (req, res) => {
 // ROUTE 2 -- Get all bookings
 // GET/bookings
 // used by admin.html to fetch all bookings
-router.get('/', async (req, res) => {
+// protected; requires a valid admin token , since it exposes customer data
+router.get('/', verifyAdminToken, async (req, res) => {
     try {
         // fetch all bookings from mongodb
         //sort (-1)so new bookings show first
@@ -66,7 +69,9 @@ router.get('/', async (req, res) => {
 //ROUTE 3
 // PATCH/bookings/:id
 // used by admin.html when confiming bookings or rejecting
-router.patch('/:id', async (req, res) => {
+// protected: onnly a logged in admin can change a booikng status or delete a booking
+
+router.patch('/:id', verifyAdminToken, async (req, res) => {
     try {
         const updated = await Booking.findByIdAndUpdate(
             req.params.id,
@@ -88,8 +93,8 @@ router.patch('/:id', async (req, res) => {
 //ROUTE 4
 // DELETE/bookings/:id
 // used by admin.html when deleting bookings
-
-router.delete('/:id', async (req, res) => {
+// protected: only a logged in admin can delete a booking
+router.delete('/:id', verifyAdminToken, async (req, res) => {
     try {
         const deleted = await Booking.findByIdAndDelete(req.params.id);
         if (!deleted) {

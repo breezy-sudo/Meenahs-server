@@ -6,7 +6,6 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 require('dotenv').config();
-
 const app = express();
 const PORT = process.env.PORT || 7000;
 const allowedOrigins = [
@@ -34,6 +33,13 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// stricter limiter just for admin login — slows down brute-force password guessing
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // only 5 login attempts per IP per window
+    message: 'Too many login attempts, please try again later.'
+});
+
 // body parser and data sanitization
 app.use(express.json());
 app.use(mongoSanitize()); // sanitize data to prevent NoSQL injection and also remove $ and . from user unput
@@ -57,7 +63,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Meenahshe
 
 // routes
 const bookingRoutes = require('./routes/instrn.js');
+const adminAuthRoutes = require('./routes/adminAuth.js');
 app.use('/bookings', bookingRoutes);
+app.use('/admin/login', loginLimiter);
+app.use('/admin', adminAuthRoutes);
 app.get('/', (req, res) => {
     res.send('🌸 Meenahs Henna Art Server is running!');
 });
