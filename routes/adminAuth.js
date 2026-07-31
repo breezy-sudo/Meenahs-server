@@ -12,13 +12,21 @@ router.post('/login', async (req, res) => {
         }
 
         // Username check — plain compare is fine, it isn't the secret.
-        if (username !== process.env.ADMIN_USERNAME) {
+        const usernameMatches = username === process.env.ADMIN_USERNAME;
+        console.log('[admin login] username match:', usernameMatches);
+
+        if (!usernameMatches) {
             return res.status(401).json({ message: 'Incorrect username or password' });
         }
 
+        // Sanity-check the hash itself is actually present and looks like a real bcrypt hash
+        const hash = process.env.ADMIN_PASSWORD_HASH;
+        console.log('[admin login] hash present:', !!hash, '| length:', hash ? hash.length : 0, '| starts with $2:', hash ? hash.startsWith('$2') : false);
+
         // Password check — compares against the bcrypt HASH stored in env vars,
         // never a plain-text password.
-        const passwordMatches = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+        const passwordMatches = await bcrypt.compare(password, hash || '');
+        console.log('[admin login] password match:', passwordMatches);
 
         if (!passwordMatches) {
             return res.status(401).json({ message: 'Incorrect username or password' });
@@ -33,7 +41,7 @@ router.post('/login', async (req, res) => {
 
         res.json({ token });
     } catch (error) {
-        console.log('Login error:', error);
+        console.error('[admin login] unexpected error:', error);
         res.status(500).json({ message: 'Login failed, try again' });
     }
 });
