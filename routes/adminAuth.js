@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
         }
 
         // Sanity-check the hash itself is actually present and looks like a real bcrypt hash
-        const hash = process.env.ADMIN_PASSWORD_HASH;
+        const hash = (process.env.ADMIN_PASSWORD_HASH || '').trim();
         console.log('[admin login] hash present:', !!hash, '| length:', hash ? hash.length : 0, '| starts with $2:', hash ? hash.startsWith('$2') : false);
 
         // Password check — compares against the bcrypt HASH stored in env vars,
