@@ -63,12 +63,12 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Meenahshe
 
 // routes
 const bookingRoutes = require('./routes/instrn.js');
-const payentRoutes = require('./routes/payent.js');
+const paymentRoutes = require('./routes/payment.js');
 const adminAuthRoutes = require('./routes/adminAuth.js');
 app.use('/bookings', bookingRoutes);
 app.use('/admin/login', loginLimiter);
 app.use('/admin', adminAuthRoutes);
-app.use('/payment', payentRoutes);
+app.use('/payment', paymentRoutes);
 app.get('/', (req, res) => {
     res.send('🌸 Meenahs Henna Art Server is running!');
 });

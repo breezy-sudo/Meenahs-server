@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Booking = require('../models/bookings.js');
 const { calculateTotalPrice } = require('../utils/pricing');
-const { initializeTransaction, verifyTransaction } = require('../services/monnify');
+const { initializeTransaction, verifyTransaction } = require('../services/monnify.js');
 
 // ROUTE 1 -- Start checkout for an existing booking
 // POST /payment/checkout/:bookingId
