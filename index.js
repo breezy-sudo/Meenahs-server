@@ -63,7 +63,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/Meenahshe
 
 // routes
 const bookingRoutes = require('./routes/instrn.js');
-const payentRoutes = require('./routes/payment.js');
+const payentRoutes = require('./routes/payent.js');
 const adminAuthRoutes = require('./routes/adminAuth.js');
 app.use('/bookings', bookingRoutes);
 app.use('/admin/login', loginLimiter);
