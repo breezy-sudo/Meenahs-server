@@ -4,6 +4,20 @@ const Booking = require('../models/bookings.js');
 const { calculateTotalPrice } = require('../utils/pricing');
 const { initializeTransaction, verifyTransaction } = require('../services/monnify.js');
 
+// This route is reachable by anyone with a payment reference, so only ever send
+// back the few harmless fields the website needs — never phone, address or notes.
+function safeBooking(booking) {
+    return {
+        _id: booking._id,
+        date: booking.date,
+        time: booking.time,
+        amountDue: booking.amountDue,
+        amountPaid: booking.amountPaid,
+        paymentStatus: booking.paymentStatus,
+        status: booking.status
+    };
+}
+
 // ROUTE 1 -- Start checkout for an existing booking
 // POST /payment/checkout/:bookingId
 // Pulls the booking's OWN saved hennaType/bodyArea from the database and calculates
@@ -14,6 +28,10 @@ router.post('/checkout/:bookingId', async (req, res) => {
 
         if (!booking) {
             return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        if (booking.paymentStatus === 'paid') {
+            return res.status(409).json({ message: 'This booking has already been paid for' });
         }
 
         const amount = calculateTotalPrice({
@@ -36,13 +54,15 @@ router.post('/checkout/:bookingId', async (req, res) => {
         const transaction = await initializeTransaction({
             amount,
             customerName: booking.name,
-            customerEmail: req.body.email || 'noemail@meenahshennaart.com', // Monnify requires an email; collect one on the form if you want real receipts
+            // the email saved with the booking is preferred; the one posted here is a fallback
+            customerEmail: booking.email || req.body.email || 'noemail@meenahshennaart.com',
             paymentReference,
             paymentDescription: `Meenahs Henna Art booking — ${selectionSummary}`
         });
 
         booking.amountDue = amount;
         booking.paymentReference = paymentReference;
+        booking.transactionReference = transaction.transactionReference;
         await booking.save();
 
         res.json({
@@ -62,25 +82,46 @@ router.post('/checkout/:bookingId', async (req, res) => {
 // "success" callback alone, always re-check with Monnify directly from the server.
 router.post('/verify', async (req, res) => {
     try {
-        const { transactionReference } = req.body;
+        // The browser may hand us either reference, depending on how it came back
+        // from the payment page — accept both and look the booking up either way.
+        const reference = req.body.transactionReference || req.body.paymentReference;
 
-        if (!transactionReference) {
-            return res.status(400).json({ message: 'transactionReference required' });
+        if (!reference) {
+            return res.status(400).json({ message: 'A payment reference is required' });
         }
 
-        const result = await verifyTransaction(transactionReference);
+        const booking = await Booking.findOne({
+            $or: [{ transactionReference: reference }, { paymentReference: reference }]
+        });
+
+        if (!booking) {
+            return res.status(404).json({ message: 'We could not find that payment' });
+        }
+
+        // Already confirmed on an earlier visit — nothing more to do
+        if (booking.paymentStatus === 'paid') {
+            return res.json({ message: 'Payment confirmed', booking: safeBooking(booking) });
+        }
+
+        // Always verify against the provider using THEIR reference, never the browser's word
+        const result = await verifyTransaction(booking.transactionReference || reference);
 
         if (result.paymentStatus !== 'PAID') {
-            return res.status(402).json({ message: 'Payment not completed', status: result.paymentStatus });
+            return res.status(402).json({ message: 'Payment not completed yet', status: result.paymentStatus });
         }
 
-        const booking = await Booking.findOneAndUpdate(
-            { paymentReference: transactionReference },
-            { paymentStatus: 'paid' },
-            { new: true }
-        );
+        // Guard against a short payment — only mark paid if the full amount landed
+        if (Number(result.amountPaid) < Number(booking.amountDue)) {
+            return res.status(402).json({ message: 'Payment amount was less than the booking total' });
+        }
 
-        res.json({ message: 'Payment confirmed', booking });
+        booking.paymentStatus = 'paid';
+        booking.amountPaid = Number(result.amountPaid) || booking.amountDue;
+        booking.paidAt = new Date();
+        booking.status = 'confirmed';
+        await booking.save();
+
+        res.json({ message: 'Payment confirmed', booking: safeBooking(booking) });
     } catch (error) {
         console.error('Verify error:', error);
         res.status(500).json({ message: 'Could not verify payment' });

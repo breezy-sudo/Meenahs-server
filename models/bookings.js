@@ -12,6 +12,11 @@ const bookingSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // used for the payment receipt — optional for pay-on-the-day bookings
+    email: {
+        type: String,
+        required: false
+    },
 
     //appointment details
     date: {
@@ -77,6 +82,19 @@ const bookingSchema = new mongoose.Schema({
     },
     paymentReference: {
         type: String,
+        required: false
+    },
+    // the provider's own reference for the same payment — what we verify against
+    transactionReference: {
+        type: String,
+        required: false
+    },
+    amountPaid: {
+        type: Number,
+        default: 0
+    },
+    paidAt: {
+        type: Date,
         required: false
     },
     paymentStatus: {
